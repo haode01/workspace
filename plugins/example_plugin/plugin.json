@@ -1,0 +1,6 @@
+{
+    "name": "example_plugin",
+    "version": "1.0",
+    "description": "示例插件 - 展示插件系统能力",
+    "entry": "main.py"
+}

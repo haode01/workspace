@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Desktop Assistant</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+
+<!-- 动态背景 -->
+<div id="bg-canvas">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+</div>
+
+<!-- ═══════ 登录遮罩 ═══════ -->
+<div class="login-overlay" id="login-overlay">
+    <div class="login-box">
+        <h2>🤖 AI Desktop Assistant</h2>
+        <p class="login-subtitle">请登录以继续</p>
+        <div class="login-tabs">
+            <button class="login-tab active" onclick="switchLoginTab('login')">登录</button>
+            <button class="login-tab" onclick="switchLoginTab('register')">注册</button>
+        </div>
+        <div id="login-form">
+            <input type="text" class="input" id="login-username" placeholder="用户名" autocomplete="username">
+            <input type="password" class="input" id="login-password" placeholder="密码"
+                   autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+            <button class="btn btn-primary" style="width:100%" onclick="doLogin()">登录</button>
+        </div>
+        <div id="register-form" style="display:none">
+            <input type="text" class="input" id="reg-username" placeholder="用户名 (2-20字符)" autocomplete="off">
+            <input type="password" class="input" id="reg-password" placeholder="密码 (至少4位)"
+                   autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()">
+            <button class="btn btn-primary" style="width:100%" onclick="doRegister()">注册</button>
+        </div>
+        <div class="login-error" id="login-error"></div>
+    </div>
+</div>
+
+<!-- ═══════ 左侧导航栏 (hover 展开) ═══════ -->
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-trigger"></div>
+    <div class="sidebar-content">
+        <div class="sidebar-brand">AI</div>
+        <div class="sidebar-items">
+            <div class="sidebar-item active" onclick="switchView('search')" data-view="search">
+                <span class="sidebar-icon">🔍</span>
+                <span class="sidebar-label">知识检索</span>
+            </div>
+            <div class="sidebar-item perm-todo-only" onclick="switchView('todo')" data-view="todo">
+                <span class="sidebar-icon">📋</span>
+                <span class="sidebar-label">待办事项</span>
+                <span class="sidebar-badge" id="sidebar-todo-count">0</span>
+            </div>
+            <div class="sidebar-item perm-files-only" onclick="openModal('upload-modal')">
+                <span class="sidebar-icon">📂</span>
+                <span class="sidebar-label">文件管理</span>
+            </div>
+            <div class="sidebar-item perm-files-only" onclick="switchView('editor')" data-view="editor">
+                <span class="sidebar-icon">📝</span>
+                <span class="sidebar-label">文本编辑</span>
+            </div>
+            <a class="sidebar-item perm-files-only" href="/server-files" style="text-decoration:none;color:inherit">
+                <span class="sidebar-icon">🖥</span>
+                <span class="sidebar-label">服务器文件</span>
+            </a>
+            <div class="sidebar-item perm-graph-only" onclick="openModal('graph-modal')">
+                <span class="sidebar-icon">🔗</span>
+                <span class="sidebar-label">知识图谱</span>
+            </div>
+            <a class="sidebar-item perm-workflow-only" href="/workflow" style="text-decoration:none;color:inherit">
+                <span class="sidebar-icon">⚡</span>
+                <span class="sidebar-label">工作流</span>
+            </a>
+            <a class="sidebar-item perm-patch_review-only" href="/patch-review" style="text-decoration:none;color:inherit">
+                <span class="sidebar-icon">📋</span>
+                <span class="sidebar-label">Patch Review</span>
+            </a>
+            <a class="sidebar-item" href="/tools" style="text-decoration:none;color:inherit">
+                <span class="sidebar-icon">🛠</span>
+                <span class="sidebar-label">工具管理</span>
+            </a>
+            <div class="sidebar-item perm-plugins-only" onclick="openModal('plugin-modal')">
+                <span class="sidebar-icon">🧩</span>
+                <span class="sidebar-label">插件中心</span>
+            </div>
+        </div>
+        <div class="sidebar-bottom">
+            <div class="sidebar-item sidebar-user" id="sidebar-user">
+                <span class="sidebar-icon">👤</span>
+                <span class="sidebar-label">
+                    <span id="sidebar-username">—</span>
+                    <span class="sidebar-role-badge" id="sidebar-role"></span>
+                </span>
+            </div>
+            <div class="sidebar-item" onclick="doLogout()" title="退出登录">
+                <span class="sidebar-icon">🚪</span>
+                <span class="sidebar-label">退出登录</span>
+            </div>
+            <div class="sidebar-item admin-only" onclick="openUsersModal()">
+                <span class="sidebar-icon">👥</span>
+                <span class="sidebar-label">用户管理</span>
+            </div>
+            <div class="sidebar-item" onclick="openModal('settings-modal')">
+                <span class="sidebar-icon">⚙️</span>
+                <span class="sidebar-label">系统设置</span>
+            </div>
+            <div class="sidebar-item" onclick="toggleTheme()">
+                <span class="sidebar-icon" id="theme-icon">🌙</span>
+                <span class="sidebar-label" id="theme-label">暗黑模式</span>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- ═══════ 主布局 ═══════ -->
+<div class="app">
+
+    <!-- ═══════ 视图: 知识检索 ═══════ -->
+    <div class="view active" id="view-search">
+        <header class="topbar">
+            <div class="topbar-brand">智能知识检索</div>
+            <div class="topbar-spacer"></div>
+            <span class="topbar-badge" id="doc-count-badge">0 篇文档</span>
+        </header>
+
+        <div class="main-area">
+            <div class="hero">
+                <h1>智能知识检索</h1>
+                <p>上传文档，语义搜索，AI 即时问答</p>
+            </div>
+
+            <div class="search-container perm-search-only">
+                <div class="search-box">
+                    <input type="text" id="kb-query" placeholder="输入问题，搜索知识库..."
+                           onkeydown="if(event.key==='Enter')kbSearch()">
+                    <div class="search-actions">
+                        <select class="input search-cat-filter" id="search-category" title="按分类筛选" onchange="kbSearch()">
+                            <option value="">全部分类</option>
+                        </select>
+                        <button class="btn btn-sm btn-ghost" onclick="kbSearch()">🔍 搜索</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-area" id="results-area">
+                <div class="empty-results">
+                    <div class="icon">🧠</div>
+                    <p>上传文档后在此搜索，或直接向 AI 提问</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════ 视图: 待办事项 (独立区域) ═══════ -->
+    <div class="view" id="view-todo">
+        <header class="topbar">
+            <div class="topbar-brand">待办事项</div>
+            <div class="topbar-spacer"></div>
+            <div class="todo-tabs">
+                <button class="todo-tab active" id="todo-tab-today" onclick="switchTodoTab('today')">今日任务</button>
+                <button class="todo-tab" id="todo-tab-history" onclick="switchTodoTab('history')">历史记录</button>
+            </div>
+            <button class="btn btn-sm btn-ghost" onclick="aiSuggest()">✨ 智能规划</button>
+        </header>
+
+        <div class="main-area">
+            <!-- 今日任务 -->
+            <div class="todo-section" id="todo-today-section">
+                <div class="todo-add-bar">
+                    <input type="text" class="input" id="todo-input" placeholder="添加新任务..."
+                           onkeydown="if(event.key==='Enter')addTodo()">
+                    <select class="input todo-priority-select" id="todo-priority" style="width:90px">
+                        <option value="1">● 高</option>
+                        <option value="2" selected>● 中</option>
+                        <option value="3">● 低</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="addTodo()">添加</button>
+                </div>
+                <div id="ai-output" class="result-box" style="display:none"></div>
+                <div class="todo-list" id="todo-items"></div>
+            </div>
+            <!-- 历史记录 -->
+            <div class="todo-section" id="todo-history-section" style="display:none">
+                <div class="todo-history-toolbar">
+                    <input type="date" class="input" id="todo-history-date" onchange="loadTodoHistory()"
+                           style="width:180px">
+                    <button class="btn btn-sm btn-ghost" onclick="loadTodoHistory()">查询</button>
+                    <span class="todo-history-hint" id="todo-history-hint"></span>
+                </div>
+                <div class="todo-date-chips" id="todo-date-chips"></div>
+                <div class="todo-list" id="todo-history-items"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════ 视图: 文本编辑 — 列表页 ═══════ -->
+    <div class="view" id="view-editor">
+        <header class="topbar">
+            <div class="topbar-brand">Markdown 文本编辑</div>
+            <div class="topbar-spacer"></div>
+            <span class="topbar-badge" id="editor-note-count">0 篇</span>
+            <button class="btn btn-primary btn-sm" onclick="createNewEditorNote()">+ 新建文本</button>
+        </header>
+        <div class="main-area">
+            <div class="editor-note-grid" id="editor-note-list"></div>
+        </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div class="editor-toast" id="editor-toast"></div>
+
+    <!-- ═══════ 全屏编辑器 ═══════ -->
+    <div class="editor-fullscreen" id="editor-fullscreen">
+        <div class="editor-fs-topbar">
+            <button class="btn btn-sm btn-ghost" onclick="closeEditorFullscreen()">← 返回列表</button>
+            <input type="text" class="input editor-fs-title" id="editor-title" placeholder="文本名称（必填）">
+            <input type="text" class="input editor-fs-cat" id="editor-category" placeholder="分类（如 学习/前端）" list="category-suggestions">
+            <div class="editor-fs-actions">
+                <label title="背景颜色" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-muted)">
+                    🎨 <input type="color" id="editor-bg-color" value="#ffffff" onchange="changeEditorBg(this.value)">
+                </label>
+                <label title="文字颜色" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-muted)">
+                    Aa <input type="color" id="editor-text-color" value="#1e1e2e" onchange="changeEditorTextColor(this.value)">
+                </label>
+                <label class="btn btn-sm btn-ghost" style="cursor:pointer">
+                    🖼 插入图片
+                    <input type="file" id="editor-image-picker" accept="image/*" hidden onchange="insertEditorImageFromPicker(this)">
+                </label>
+                <button class="btn btn-sm btn-danger" onclick="deleteEditorNote()">🗑 删除</button>
+                <button class="btn btn-primary btn-sm" onclick="saveEditorNote()">💾 保存并入库</button>
+                <button class="btn btn-sm btn-primary" id="editor-ai-trigger" onclick="toggleEditorAiPanel()">✨ AI 问答</button>
+            </div>
+        </div>
+        <div class="editor-fs-status" id="editor-status"></div>
+        <div class="editor-fs-body">
+            <!-- 目录侧栏 -->
+            <div class="editor-fs-toc" id="editor-toc">
+                <div class="toc-header">
+                    <span>📑 目录</span>
+                    <button class="toc-toggle" onclick="toggleEditorToc()" title="收起目录">◀</button>
+                </div>
+                <div class="toc-list" id="editor-toc-list"></div>
+            </div>
+            <button class="toc-expand-btn" id="toc-expand-btn" onclick="toggleEditorToc()" title="展开目录">▶</button>
+            <!-- 编辑 + 预览 -->
+            <div class="editor-fs-content" id="editor-fs-content">
+                <textarea class="editor-fs-textarea" id="editor-content" placeholder="在此输入 Markdown 文本...&#10;&#10;支持：&#10;- 标题、列表、代码块&#10;- 本地图片拖拽上传并自动插入&#10;- 右侧实时渲染预览"></textarea>
+                <div class="editor-fs-preview md-rendered" id="editor-preview"></div>
+            </div>
+            <!-- AI 问答面板 -->
+            <div class="editor-ai-panel" id="editor-ai-panel">
+                <div class="ai-resize-handle" id="editor-ai-resize-handle"></div>
+                <div class="ai-panel-header">
+                    <h3>✨ AI 问答</h3>
+                    <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+                        <label style="display:flex;align-items:center;gap:3px;font-size:11px;color:var(--text-muted);cursor:pointer;user-select:none" title="勾选后 AI 以整篇文档为背景回答">
+                            <input type="checkbox" id="editor-ai-fullctx" checked> 全文
+                        </label>
+                        <select class="input" id="editor-ai-model-select" style="font-size:11px;padding:2px 6px;max-width:120px" title="选择模型"></select>
+                        <button class="modal-close" onclick="toggleEditorAiPanel()" style="width:28px;height:28px;font-size:14px">✕</button>
+                    </div>
+                </div>
+                <div class="ai-panel-messages" id="editor-ai-messages">
+                    <div class="ai-welcome">💡 基于当前文档内容提问</div>
+                </div>
+                <div class="ai-panel-input">
+                    <input type="text" id="editor-ai-query" class="input" placeholder="向 AI 提问..."
+                           onkeydown="if(event.key==='Enter')askEditorAi()">
+                    <button class="btn btn-primary btn-sm" onclick="askEditorAi()">发送</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════ 任务详情弹窗 ═══════ -->
+    <div class="modal-overlay" id="todo-detail-modal">
+        <div class="modal" style="max-width:800px">
+            <div class="modal-header">
+                <h2 id="todo-detail-title">任务详情</h2>
+                <button class="modal-close" onclick="closeTodoDetail()">✕</button>
+            </div>
+            <div class="todo-detail-meta" id="todo-detail-meta"></div>
+            <div class="todo-detail-toolbar">
+                <button class="btn btn-sm btn-ghost" id="todo-detail-edit-btn" onclick="toggleTodoDetailEdit()">✏ 编辑</button>
+                <button class="btn btn-sm btn-primary" id="todo-detail-save-btn" onclick="saveTodoDetail()" style="display:none">💾 保存</button>
+            </div>
+            <div class="todo-detail-content" id="todo-detail-view"></div>
+            <textarea class="todo-detail-editor" id="todo-detail-editor" style="display:none"
+                      placeholder="在此编写任务详情... 支持 Markdown 语法"></textarea>
+        </div>
+    </div>
+
+</div>
+
+<!-- ═══════ 模态窗 — 文件管理 + 上传 ═══════ -->
+<div class="modal-overlay" id="upload-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>📂 文件管理</h2>
+            <button class="modal-close" onclick="closeModal('upload-modal')">✕</button>
+        </div>
+        <!-- 上传模式切换 -->
+        <div class="upload-tabs">
+            <button class="upload-tab active" onclick="switchUploadTab('file')">📄 文件上传</button>
+            <button class="upload-tab" onclick="switchUploadTab('text')">✏️ 文本输入</button>
+        </div>
+        <!-- 分类选择器 (共用) -->
+        <div class="category-selector" id="category-selector">
+            <label style="font-size:12px;color:var(--text-muted);font-weight:500">分类路径 <span style="opacity:0.6">(用 / 分隔多级，如 技术/前端)</span></label>
+            <div style="display:flex;gap:6px;margin-top:4px;align-items:center">
+                <input type="text" class="input" id="upload-category" placeholder="选择或输入分类..." style="flex:1"
+                       list="category-suggestions" autocomplete="off">
+                <datalist id="category-suggestions"></datalist>
+            </div>
+        </div>
+        <!-- Tab: 文件上传 -->
+        <div class="upload-tab-content" id="tab-file">
+            <div class="upload-zone" id="upload-zone">
+                <div class="upload-icon">📄</div>
+                <p>拖拽文件至此，或点击选择文件</p>
+                <p style="font-size:11px;color:var(--text-muted);margin-top:4px">
+                    支持 PDF、TXT、MD、DOCX、HTML、CSV、JSON、代码文件等
+                </p>
+                <div style="margin-top:12px">
+                    <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin:0">
+                        选择文件
+                        <input type="file" id="file-picker" accept=".txt,.pdf,.md,.docx,.html,.htm,.csv,.json,.py,.js,.java,.c,.cpp" multiple hidden onchange="onFilesSelected(this)">
+                    </label>
+                </div>
+            </div>
+            <div id="file-preview-list" style="display:none"></div>
+            <div id="file-upload-actions" style="display:none;gap:8px;align-items:center">
+                <button class="btn btn-primary" onclick="startUpload()">📤 开始上传</button>
+                <button class="btn btn-sm btn-ghost" onclick="clearFileSelection()">✕ 清除</button>
+                <span id="file-selected-count" style="font-size:12px;color:var(--text-muted);margin-left:auto"></span>
+            </div>
+        </div>
+        <!-- Tab: 文本输入 -->
+        <div class="upload-tab-content" id="tab-text" style="display:none">
+            <input type="text" class="input" id="text-doc-title" placeholder="文档标题 (可选)" style="margin-bottom:8px">
+            <textarea class="input" id="text-doc-content" rows="8" placeholder="在此输入或粘贴文本内容...&#10;支持 Markdown 格式" style="resize:vertical;font-family:inherit;line-height:1.6"></textarea>
+            <div style="margin-top:10px;text-align:right">
+                <button class="btn btn-primary" onclick="submitTextDoc()">💾 保存文档</button>
+            </div>
+        </div>
+        <div id="upload-status" style="display:none" class="result-box"></div>
+        <div style="margin-top:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                <span style="font-weight:600;font-size:14px">已上传文档</span>
+                <span style="font-size:12px;color:var(--text-muted)" id="modal-doc-count">0 篇</span>
+            </div>
+            <div id="doc-list" style="max-height:300px;overflow-y:auto"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════ 模态窗 — 知识图谱 ═══════ -->
+<div class="modal-overlay" id="graph-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>🔗 知识图谱</h2>
+            <button class="modal-close" onclick="closeModal('graph-modal')">✕</button>
+        </div>
+        <div class="input-row">
+            <input type="text" class="input" id="g-e1" placeholder="实体1" style="flex:1">
+            <input type="text" class="input" id="g-rel" placeholder="关系" style="flex:1">
+            <input type="text" class="input" id="g-e2" placeholder="实体2" style="flex:1">
+            <button class="btn btn-primary" onclick="addTriple()">+ 添加</button>
+        </div>
+        <div class="input-row">
+            <input type="text" class="input" id="g-query" placeholder="输入实体名称查询..."
+                   onkeydown="if(event.key==='Enter')queryEntity()">
+            <button class="btn btn-ghost" onclick="queryEntity()">🔍 查询</button>
+        </div>
+        <div id="g-query-result" class="result-box" style="display:none"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px">
+            <span style="font-weight:600;font-size:14px">所有三元组</span>
+            <button class="btn btn-danger btn-sm" onclick="deleteTriple()">🗑 删除</button>
+        </div>
+        <div id="triple-list" style="max-height:250px;overflow-y:auto"></div>
+    </div>
+</div>
+
+<!-- ═══════ 模态窗 — 插件 ═══════ -->
+<div class="modal-overlay" id="plugin-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>🧩 插件中心</h2>
+            <button class="modal-close" onclick="closeModal('plugin-modal')">✕</button>
+        </div>
+        <div id="plugin-list"></div>
+        <div id="plugin-output" class="result-box" style="display:none"></div>
+    </div>
+</div>
+
+<!-- ═══════ 模态窗 — 系统设置 ═══════ -->
+<div class="modal-overlay" id="settings-modal">
+    <div class="modal" style="max-width:560px">
+        <div class="modal-header">
+            <h2>⚙️ 系统设置</h2>
+            <button class="modal-close" onclick="closeModal('settings-modal')">✕</button>
+        </div>
+        <div class="settings-body">
+            <!-- 问答模型 -->
+            <div class="settings-group">
+                <div class="settings-group-title">问答模型</div>
+                <label class="settings-label">API Base URL
+                    <input type="text" class="input" id="cfg-api-base" placeholder="https://api.openai.com/v1">
+                </label>
+                <label class="settings-label">API Key
+                    <input type="password" class="input" id="cfg-api-key" placeholder="sk-...">
+                </label>
+                <label class="settings-label">模型名称
+                    <input type="text" class="input" id="cfg-model" placeholder="gpt-3.5-turbo">
+                </label>
+            </div>
+            <!-- Embedding 模型 -->
+            <div class="settings-group">
+                <div class="settings-group-title">Embedding 模型</div>
+                <label class="settings-label">API Base URL <span class="settings-hint">(留空则复用问答模型)</span>
+                    <input type="text" class="input" id="cfg-emb-base" placeholder="留空复用问答模型地址">
+                </label>
+                <label class="settings-label">API Key <span class="settings-hint">(留空则复用问答模型)</span>
+                    <input type="password" class="input" id="cfg-emb-key" placeholder="留空复用问答模型 Key">
+                </label>
+                <label class="settings-label">模型名称
+                    <input type="text" class="input" id="cfg-emb-model" placeholder="text-embedding-ada-002">
+                </label>
+            </div>
+            <!-- 模型列表 -->
+            <div class="settings-group">
+                <div class="settings-group-title">问答模型列表 <span class="settings-hint">(可在 AI 问答时切换)</span></div>
+                <div id="models-list"></div>
+                <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+                    <input type="text" class="input" id="new-model-name" placeholder="名称 (如 GPT-4o)" style="flex:1;min-width:100px">
+                    <input type="text" class="input" id="new-model-base" placeholder="API Base URL" style="flex:2;min-width:150px">
+                    <input type="text" class="input" id="new-model-key" placeholder="API Key" style="flex:2;min-width:150px">
+                    <input type="text" class="input" id="new-model-model" placeholder="模型名称" style="flex:1;min-width:100px">
+                    <button class="btn btn-primary btn-sm" onclick="addModel()">+ 添加</button>
+                </div>
+            </div>
+            <!-- Neo4j -->
+            <div class="settings-group admin-only">
+                <div class="settings-group-title">Neo4j 图数据库 <span class="settings-hint">(可选)</span></div>
+                <label class="settings-label">URI
+                    <input type="text" class="input" id="cfg-neo4j-uri" placeholder="bolt://localhost:7687">
+                </label>
+                <div style="display:flex;gap:8px">
+                    <label class="settings-label" style="flex:1">用户名
+                        <input type="text" class="input" id="cfg-neo4j-user" placeholder="neo4j">
+                    </label>
+                    <label class="settings-label" style="flex:1">密码
+                        <input type="password" class="input" id="cfg-neo4j-pass" placeholder="密码">
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="settings-footer">
+            <span id="settings-status" style="font-size:12px;color:var(--text-muted)"></span>
+            <button class="btn btn-primary" onclick="saveConfig()">保存配置</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════ 模态窗 — 用户管理 (admin) ═══════ -->
+<div class="modal-overlay admin-only" id="users-modal">
+    <div class="modal" style="max-width:600px">
+        <div class="modal-header">
+            <h2>👥 用户管理</h2>
+            <button class="modal-close" onclick="closeModal('users-modal')">✕</button>
+        </div>
+        <div id="users-list" style="max-height:400px;overflow-y:auto"></div>
+    </div>
+</div>
+
+<!-- ═══════ 全屏详情页 ═══════ -->
+<div class="detail-fullscreen" id="detail-fullscreen">
+    <div class="detail-topbar">
+        <button class="btn btn-sm btn-ghost" onclick="closeDetail()">← 返回</button>
+        <h2 id="detail-title">📄 内容详情</h2>
+        <div class="detail-controls">
+            <button class="btn btn-sm btn-ghost" onclick="toggleToc()" title="切换目录">📑 目录</button>
+            <label title="背景颜色" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-muted)">
+                🎨 <input type="color" id="detail-bg-color" value="#ffffff" onchange="changeDetailBg(this.value)">
+            </label>
+            <label title="文字颜色" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-muted)">
+                Aa <input type="color" id="detail-text-color" value="#1e1e2e" onchange="changeDetailText(this.value)">
+            </label>
+            <button class="btn btn-sm btn-ghost perm-download-only" id="detail-download-btn" onclick="downloadDetailDoc()" style="display:none">⬇ 下载</button>
+            <button class="btn btn-sm btn-ghost perm-modify-only" id="detail-category-btn" onclick="showCategoryEdit()" style="display:none" title="修改分类">🏷 分类</button>
+            <button class="btn btn-sm btn-ghost detail-delete-btn perm-modify-only" id="detail-delete-btn" onclick="deleteDetailDoc()" style="display:none" title="删除文档">🗑 删除</button>
+            <button class="btn btn-sm btn-primary" id="ai-trigger" onclick="toggleAiPanel()">✨ AI 问答</button>
+        </div>
+    </div>
+    <!-- 文档内搜索栏 -->
+    <div class="detail-search-bar" id="detail-search-bar">
+        <input type="text" class="input" id="detail-search-input" placeholder="在文档中搜索..."
+               onkeydown="if(event.key==='Enter')detailSearch()">
+        <span id="detail-search-count" style="font-size:12px;color:var(--text-muted);min-width:60px;text-align:center"></span>
+        <button class="btn btn-sm btn-ghost" onclick="detailSearchNav(-1)" title="上一个">▲</button>
+        <button class="btn btn-sm btn-ghost" onclick="detailSearchNav(1)" title="下一个">▼</button>
+        <button class="btn btn-sm btn-ghost" onclick="detailSearchClear()">✕</button>
+    </div>
+    <div class="detail-main">
+        <!-- 目录侧栏 -->
+        <div class="detail-toc" id="detail-toc">
+            <div class="toc-header">📑 目录</div>
+            <div class="toc-list" id="toc-list"></div>
+        </div>
+        <div class="detail-body" id="detail-content"></div>
+        <!-- 选中文本浮动工具条 -->
+        <div class="selection-toolbar" id="selection-toolbar" style="display:none">
+            <button onclick="askAiWithSelection()" title="向 AI 提问选中内容">✨ 问 AI</button>
+            <button onclick="copySelection()" title="复制选中内容">📋 复制</button>
+        </div>
+        <div class="ai-panel" id="ai-panel">
+            <div class="ai-resize-handle" id="ai-resize-handle"></div>
+            <div class="ai-panel-header">
+                <h3>✨ AI 问答</h3>
+                <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+                    <label style="display:flex;align-items:center;gap:3px;font-size:11px;color:var(--text-muted);cursor:pointer;user-select:none" title="勾选后 AI 以整篇文档为背景回答">
+                        <input type="checkbox" id="ai-fullctx" checked> 全文
+                    </label>
+                    <select class="input" id="ai-model-select" style="font-size:11px;padding:2px 6px;max-width:120px" title="选择模型"></select>
+                    <button class="btn btn-sm btn-ghost" onclick="exportAiChat()" title="导出对话">📥</button>
+                    <button class="modal-close" onclick="toggleAiPanel()" style="width:28px;height:28px;font-size:14px">✕</button>
+                </div>
+            </div>
+            <div class="ai-panel-messages" id="ai-messages">
+                <div class="ai-welcome">💡 基于当前文档内容提问</div>
+            </div>
+            <div class="ai-panel-input">
+                <input type="text" id="ai-query" class="input" placeholder="向 AI 提问..."
+                       onkeydown="if(event.key==='Enter')askAi()">
+                <button class="btn btn-primary btn-sm" onclick="askAi()">发送</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

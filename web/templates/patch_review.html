@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patch Review</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<link rel="stylesheet" href="/static/patch_review.css">
+</head>
+<body>
+
+<!-- ═══ 列表页 ═══ -->
+<div class="pr-list-page" id="pr-list-page">
+    <header class="pr-header">
+        <div class="pr-header-left">
+            <a href="/" class="pr-logo">← 返回</a>
+            <h1><span class="pr-glow">⚡</span> Patch Review</h1>
+        </div>
+        <div class="pr-header-right">
+            <div class="pr-mode-switch">
+                <button class="pr-mode-btn active" id="pr-mode-dir" onclick="PR.switchMode('dir')">📁 目录</button>
+                <button class="pr-mode-btn" id="pr-mode-search" onclick="PR.switchMode('search')">🔍 搜索</button>
+                <button class="pr-mode-btn" id="pr-mode-db" onclick="PR.switchMode('db')">🗃 数据库</button>
+            </div>
+            <div class="pr-divider"></div>
+            <button class="pr-btn pr-btn-glass" onclick="PR.showSettings()">⚙ 设置</button>
+            <button class="pr-btn pr-btn-glass" onclick="PR.importAll(false)">📥 导入</button>
+            <button class="pr-btn pr-btn-glass" onclick="PR.importAll(true)">🔄 全量</button>
+            <span id="pr-timer-status" class="pr-timer-badge"></span>
+        </div>
+    </header>
+
+    <div class="pr-search-area" id="pr-search-area" style="display:none">
+        <div class="pr-search-hero">
+            <h2>🔍 搜索 Patch 内容</h2>
+            <p>在已导入的 patch 中进行语义搜索</p>
+        </div>
+        <div class="pr-search-box">
+            <input type="text" id="pr-search-input" placeholder="输入关键词搜索 patch..."
+                   onkeydown="if(event.key==='Enter')PR.search()">
+            <button class="pr-btn pr-btn-primary pr-btn-glow" onclick="PR.search()">搜索</button>
+        </div>
+        <div id="pr-search-results" class="pr-search-results"></div>
+    </div>
+
+    <div class="pr-dir-area" id="pr-dir-area">
+        <div id="pr-coll-list" class="pr-coll-list">加载中...</div>
+    </div>
+
+    <div class="pr-db-area" id="pr-db-area" style="display:none">
+        <div class="pr-db-hero">
+            <h2>🗃 Patch 数据库管理</h2>
+            <p>管理已导入到知识库的 patch 文档，支持按集合或单个文档删除</p>
+        </div>
+        <div class="pr-db-toolbar">
+            <button class="pr-btn pr-btn-glass" onclick="PR.loadDbSummary()">🔄 刷新</button>
+            <button class="pr-btn pr-btn-danger" onclick="PR.deleteAllPatchDocs()">🗑 清空所有</button>
+            <span id="pr-db-stats" class="pr-db-stats"></span>
+        </div>
+        <div id="pr-db-list" class="pr-db-list"></div>
+    </div>
+</div>
+
+<!-- ═══ 详情页 ═══ -->
+<div class="pr-detail-page" id="pr-detail-page" style="display:none">
+    <div class="pr-detail-topbar">
+        <button class="pr-btn pr-btn-glass" onclick="PR.closeDetail()">← 返回</button>
+        <h2 id="pr-detail-title">文件详情</h2>
+        <div class="pr-detail-controls">
+            <button class="pr-btn pr-btn-glass" onclick="PR.toggleSidebar()" title="切换目录面板">📂 目录</button>
+            <button class="pr-btn pr-btn-glass" onclick="PR.downloadCurrent()">⬇ 下载</button>
+            <button class="pr-btn pr-btn-warning" id="pr-edit-btn" onclick="PR.toggleEdit()" title="编辑文件内容">✏ 编辑</button>
+            <button class="pr-btn pr-btn-success" id="pr-save-btn" onclick="PR.saveEdit()" title="保存修改到源文件和数据库" style="display:none">💾 保存</button>
+            <button class="pr-btn pr-btn-success" onclick="PR.aiFixPatch()" title="AI 自动修复 patch 语法问题">🔧 AI 修复</button>
+            <button class="pr-btn pr-btn-accent" id="pr-ai-trigger" onclick="PR.toggleAiPanel()">✨ AI 审查</button>
+        </div>
+    </div>
+    <div class="pr-detail-main">
+        <!-- 右侧目录结构面板 -->
+        <div class="pr-sidebar" id="pr-sidebar">
+            <div class="pr-sidebar-header">
+                <span class="pr-sidebar-title" id="pr-sidebar-title">📂 目录</span>
+                <button class="pr-sidebar-toggle" onclick="PR.toggleSidebar()" title="收起目录">◀</button>
+            </div>
+            <div class="pr-sidebar-tree" id="pr-sidebar-tree"></div>
+        </div>
+        <!-- 文件内容区域 -->
+        <div class="pr-detail-body" id="pr-detail-content">
+            <!-- 选中文本浮动工具条 -->
+            <div class="pr-selection-toolbar" id="pr-selection-toolbar" style="display:none">
+                <button onclick="PR.askAiWithSelection()" title="向 AI 提问选中内容">✨ 问 AI</button>
+                <button onclick="PR.copySelection()" title="复制选中内容">📋 复制</button>
+            </div>
+        </div>
+        <!-- AI 侧栏 -->
+        <div class="pr-ai-panel" id="pr-ai-panel" style="display:none">
+            <div class="pr-ai-resize-handle" id="pr-ai-resize-handle"></div>
+            <div class="pr-ai-header">
+                <h3>✨ AI 代码审查</h3>
+                <div class="pr-ai-header-controls">
+                    <label class="pr-ai-toggle" title="勾选后 AI 以完整文件内容为背景回答">
+                        <input type="checkbox" id="pr-ai-fullctx" checked> 全文
+                    </label>
+                    <select class="pr-ai-model-select" id="pr-ai-model-select" title="选择模型">
+                        <option value="">默认模型</option>
+                    </select>
+                    <button class="pr-btn pr-btn-sm pr-btn-glass" onclick="PR.exportAiChat()" title="导出对话">📥</button>
+                    <button class="pr-modal-close" onclick="PR.toggleAiPanel()">✕</button>
+                </div>
+            </div>
+            <div class="pr-ai-messages" id="pr-ai-messages">
+                <div class="pr-ai-welcome">
+                    <div class="pr-ai-welcome-icon">🤖</div>
+                    <p>基于当前文件内容向 AI 提问</p>
+                    <small>如: "这个 patch 修改了什么？" "有潜在 bug 吗？"</small>
+                </div>
+            </div>
+            <div class="pr-ai-input">
+                <input type="text" id="pr-ai-query" placeholder="向 AI 提问..."
+                       onkeydown="if(event.key==='Enter')PR.askAi()">
+                <button class="pr-btn pr-btn-primary" onclick="PR.askAi()">发送</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 设置弹窗 -->
+<div class="pr-modal-overlay" id="pr-settings-modal" style="display:none">
+    <div class="pr-modal">
+        <div class="pr-modal-header">
+            <h3>⚙ Patch 扫描设置</h3>
+            <button onclick="document.getElementById('pr-settings-modal').style.display='none'">✕</button>
+        </div>
+        <div class="pr-modal-body">
+            <div class="pr-form-group">
+                <label>扫描目录路径</label>
+                <input type="text" id="pr-cfg-dir" placeholder="如: D:\patches 或 /home/user/patches">
+            </div>
+            <div class="pr-form-group">
+                <label>定时扫描间隔 (秒)</label>
+                <input type="number" id="pr-cfg-interval" value="300" min="10">
+            </div>
+            <div class="pr-form-group">
+                <label>🎨 背景主题</label>
+                <div class="pr-bg-presets" id="pr-bg-presets">
+                    <div class="pr-bg-swatch active" data-bg="default" title="深蓝 (默认)" style="background:linear-gradient(135deg,#0a0e14,#111a2e,#0f1318)" onclick="PR.setBgTheme('default')"></div>
+                    <div class="pr-bg-swatch" data-bg="aurora" title="极光" style="background:linear-gradient(135deg,#0a1628,#0d2137,#162040,#1a1535)" onclick="PR.setBgTheme('aurora')"></div>
+                    <div class="pr-bg-swatch" data-bg="midnight" title="午夜紫" style="background:linear-gradient(135deg,#0d0416,#140a24,#1a0e30,#0e0818)" onclick="PR.setBgTheme('midnight')"></div>
+                    <div class="pr-bg-swatch" data-bg="ocean" title="深海" style="background:linear-gradient(135deg,#020c1b,#0a192f,#112240,#0a192f)" onclick="PR.setBgTheme('ocean')"></div>
+                    <div class="pr-bg-swatch" data-bg="forest" title="暗夜森林" style="background:linear-gradient(135deg,#0a120e,#0d1a12,#111f18,#0a140d)" onclick="PR.setBgTheme('forest')"></div>
+                    <div class="pr-bg-swatch" data-bg="ember" title="余烬" style="background:linear-gradient(135deg,#1a0a0a,#1f0e0c,#251410,#180808)" onclick="PR.setBgTheme('ember')"></div>
+                    <div class="pr-bg-swatch" data-bg="pure" title="纯黑" style="background:#000" onclick="PR.setBgTheme('pure')"></div>
+                </div>
+            </div>
+            <div class="pr-form-group">
+                <label>自定义背景色</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <input type="color" id="pr-cfg-bg-color" value="#0a0e14" style="width:40px;height:30px;border:1px solid var(--pr-border);border-radius:4px;cursor:pointer;background:transparent">
+                    <button class="pr-btn pr-btn-sm pr-btn-glass" onclick="PR.applyCustomBg()">应用颜色</button>
+                    <button class="pr-btn pr-btn-sm pr-btn-glass" onclick="PR.setBgTheme('default')">恢复默认</button>
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:16px">
+                <button class="pr-btn pr-btn-primary" onclick="PR.saveSettings()">保存</button>
+                <button class="pr-btn pr-btn-success" id="pr-timer-btn" onclick="PR.toggleTimer()">▶ 启动定时</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/patch_review.js"></script>
+</body>
+</html>

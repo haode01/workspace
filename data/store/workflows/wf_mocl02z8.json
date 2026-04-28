@@ -1,0 +1,120 @@
+{
+  "name": "commit-message",
+  "poll_interval": 3,
+  "nodes": [
+    {
+      "id": "n1_mockbw0i",
+      "node_type": "input",
+      "x": 27,
+      "y": 14,
+      "config": {
+        "label": "commit-config的配置",
+        "value": "# Unified Commit 配置文件\n# 将此文件放在项目根目录或指定路径\n\n# git仓库目录（绝对路径或相对路径）\ngit_dir: \"/home/zilin_chen/extra-harddisk/workspace/arcwrt_b/project/PRV36BE349B-ET/6.3.0_arcwrt_aarch64/project_patch\"\n\n# 分类配置文件路径（相对于当前目录或绝对路径）\ncategory_file: \"categories.yaml\"\n\n# commit模板文件路径\ntemplate_file: \"commit-template.txt\"\n\n# 报告输出目录\noutput_dir: \"/home/zilin_chen/patch-for-ai\"\n\n# ──────────────────────────────────────────────\n# AI 模型配置（统一管理，与功能模块分离）\n# ──────────────────────────────────────────────\n\n# 便宜 AI\ncheap_ai:\n  api_base: \"https://api.deepseek.com\"\n  api_key: \"sk-35d8fe781100497c98f2d48842c224ed\"\n  model: \"deepseek-chat\"\n  temperature: 0.2\n  timeout: 30\n\n# 贵 AI\nexpensive_ai:\n  api_base: \"https://lanyiapi.com/v1\"\n  api_key: \"sk-G1IFyxQq5cnRZfuEtgQoAibLXueP28mHQVwW0MyX18JLtEeM\"\n  model: \"claude-sonnet-4-6\"\n  temperature: 0.3\n  timeout: 60\n\n# ──────────────────────────────────────────────\n# 功能模块配置（ai_model: cheap_ai 或 expensive_ai）\n# ──────────────────────────────────────────────\n\n# Commit 消息生成\ncommit:\n  enabled: true\n  ai_model: cheap_ai\n\n# AI Review（提交后自动 review patch）\nreview:\n  enabled: true\n  ai_model: expensive_ai\n  rules_file: \"review-rules.md\"\n\n# Review 翻译（将 review 结果翻译成英文并生成报告）\ntranslate:\n  enabled: true\n  ai_model: cheap_ai"
+      }
+    },
+    {
+      "id": "n2_mockc4uu",
+      "node_type": "button",
+      "x": 302,
+      "y": 41,
+      "config": {
+        "label": "执行",
+        "tool": "shell",
+        "tool_params": {
+          "command": "echo \"{1}\" > {2} && echo \"OK\" || echo \"FAIL\"",
+          "timeout": 30
+        }
+      }
+    },
+    {
+      "id": "n3_mockhtnu",
+      "node_type": "output",
+      "x": 493,
+      "y": 120,
+      "config": {
+        "label": "输出"
+      }
+    },
+    {
+      "id": "n4_mockjq4u",
+      "node_type": "button",
+      "x": 266,
+      "y": 279,
+      "config": {
+        "label": "执行",
+        "tool": "shell",
+        "tool_params": {
+          "command": "echo \"{1}\" | grep -q \"OK\"  && echo \"{2}\" > /home/zilin_chen/extra-harddisk/ai/commit-tool/inform.txt   && /home/zilin_chen/extra-harddisk/ai/commit-tool/commit_tool.py --config /home/zilin_chen/extra-harddisk/ai/commit-tool/commit-config.yaml --no-review  || echo \"FAIL\"",
+          "timeout": 30
+        }
+      }
+    },
+    {
+      "id": "n5_mockkhok",
+      "node_type": "output",
+      "x": 554,
+      "y": 340,
+      "config": {
+        "label": "输出"
+      }
+    },
+    {
+      "id": "n7_mockn7ti",
+      "node_type": "input",
+      "x": 22,
+      "y": 368,
+      "config": {
+        "label": "要提交的inform ",
+        "value": "datamodel\n\n添加一些自定义的节点\n\n1.添加Device.ManagementServer.节点下的X_000E50_ForceDefaultAcsurlEnable，X_000E50_FreezeAcsurlEnable，X_000E50_FreezeMgntVlanidEnable，X_000E50_FreezeVlanidEnable属性。\n2.添加Device.WiFi.BandSteer的功能，和自定义属性X_000E50_BandSteerDowngradeThreshold，X_000E50_BandSteerUpgradeThreshold，X_000E50_BandSteerCount。\n\nfeeds/feeds_addon/package/arcadyan-utility/datamodel/src/nodes/tr181nodes_device.c\nfeeds/feeds_addon/package/arcadyan-utility/datamodel/src/nodes/tr181nodes_device.h\nfeeds/feeds_addon/package/arcadyan-utility/datamodel/src/nodes/tr181nodes_etisalat.c\nfeeds/feeds_addon/package/arcadyan-utility/datamodel/src/tr181nodesdef/device.txt\npackage/base-files/files/sbin/freeze_vlanid\npackage/network/config/netifd/files/etc/init.d/network\npackage/network/config/netifd/files/lib/netifd/dhcp.script"
+      }
+    },
+    {
+      "id": "n1_mocskhj3",
+      "node_type": "input",
+      "x": 46,
+      "y": 174,
+      "config": {
+        "label": "要配置commit-config的",
+        "value": " /home/zilin_chen/extra-harddisk/ai/commit-tool/commit-config.yaml"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "emockf9ak",
+      "source": "n1_mockbw0i",
+      "target": "n2_mockc4uu",
+      "target_idx": 1
+    },
+    {
+      "id": "emockhvc0",
+      "source": "n2_mockc4uu",
+      "target": "n3_mockhtnu",
+      "target_idx": 1
+    },
+    {
+      "id": "emockjsuc",
+      "source": "n3_mockhtnu",
+      "target": "n4_mockjq4u",
+      "target_idx": 1
+    },
+    {
+      "id": "emockkko0",
+      "source": "n4_mockjq4u",
+      "target": "n5_mockkhok",
+      "target_idx": 1
+    },
+    {
+      "id": "emocko2qh",
+      "source": "n7_mockn7ti",
+      "target": "n4_mockjq4u",
+      "target_idx": 2
+    },
+    {
+      "id": "emocskjyk",
+      "source": "n1_mocskhj3",
+      "target": "n2_mockc4uu",
+      "target_idx": 2
+    }
+  ]
+}

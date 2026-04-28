@@ -1,0 +1,86 @@
+{
+  "name": "未命名工作流",
+  "poll_interval": 3,
+  "nodes": [
+    {
+      "id": "n1_moid7pkx",
+      "node_type": "timer",
+      "x": 306,
+      "y": 63,
+      "config": {
+        "interval": 30,
+        "label": "定时器",
+        "tool": "shell",
+        "tool_params": {
+          "command": "~/tools/check_git_update.sh {1} {2} {3}",
+          "timeout": 30
+        }
+      }
+    },
+    {
+      "id": "n2_moid7rqg",
+      "node_type": "input",
+      "x": 40,
+      "y": 38,
+      "config": {
+        "label": "监听的路径",
+        "value": "/home/zilin_chen/extra-harddisk/check_update/project"
+      }
+    },
+    {
+      "id": "n3_moid8f2l",
+      "node_type": "output",
+      "x": 539,
+      "y": 194,
+      "config": {
+        "label": "输出"
+      }
+    },
+    {
+      "id": "n4_moidv08m",
+      "node_type": "input",
+      "x": 39,
+      "y": 168,
+      "config": {
+        "label": "仓库的地址",
+        "value": "\"\""
+      }
+    },
+    {
+      "id": "n5_moidw0f7",
+      "node_type": "input",
+      "x": 41,
+      "y": 301,
+      "config": {
+        "label": "匹配的message",
+        "value": "zilin_chen"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "emoid86xk",
+      "source": "n2_moid7rqg",
+      "target": "n1_moid7pkx",
+      "target_idx": 1
+    },
+    {
+      "id": "emoid8gjr",
+      "source": "n1_moid7pkx",
+      "target": "n3_moid8f2l",
+      "target_idx": 1
+    },
+    {
+      "id": "emoidv5uc",
+      "source": "n4_moidv08m",
+      "target": "n1_moid7pkx",
+      "target_idx": 2
+    },
+    {
+      "id": "emoidw3vo",
+      "source": "n5_moidw0f7",
+      "target": "n1_moid7pkx",
+      "target_idx": 3
+    }
+  ]
+}

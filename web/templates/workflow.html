@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>工作流编排</title>
+<link rel="stylesheet" href="/static/workflow.css">
+</head>
+<body>
+<!-- ═══ 顶部工具栏 ═══ -->
+<header class="wf-header">
+    <div class="wf-header-left">
+        <a href="/" class="wf-logo" title="返回主页">← 返回</a>
+        <h1>⚡ 工作流编排</h1>
+    </div>
+    <div class="wf-header-center">
+        <input type="text" id="wf-name" class="wf-name-input" placeholder="未命名工作流" value="未命名工作流">
+    </div>
+    <div class="wf-header-right">
+        <div style="display:flex;align-items:center;gap:4px;margin-right:8px">
+            <label style="font-size:11px;color:var(--wf-muted);white-space:nowrap">轮询</label>
+            <input type="number" id="wf-poll-interval" value="3" min="1" max="60" style="width:42px;font-size:11px;padding:2px 4px;background:var(--wf-bg);border:1px solid var(--wf-border);color:var(--wf-text);border-radius:4px"
+                onchange="WF.setPollInterval(this.value)">
+            <span style="font-size:11px;color:var(--wf-muted)">秒</span>
+        </div>
+        <span id="wf-status" style="font-size:11px;color:var(--wf-muted);margin-right:4px"></span>
+        <button class="wf-btn wf-btn-ghost" onclick="WF.newWorkflow()">📄 新建</button>
+        <button class="wf-btn wf-btn-ghost" onclick="WF.showLoadDialog()">📂 打开</button>
+        <button class="wf-btn wf-btn-primary" onclick="WF.save()">💾 保存</button>
+        <button class="wf-btn wf-btn-success" onclick="WF.run()">▶ 运行</button>
+        <button class="wf-btn wf-btn-ghost" id="wf-timer-btn" onclick="WF.startTimer()">⏱ 启动定时</button>
+    </div>
+</header>
+
+<div class="wf-body">
+    <!-- ═══ 左侧节点面板 ═══ -->
+    <aside class="wf-sidebar" id="wf-sidebar">
+        <div class="wf-sidebar-title">节点库</div>
+        <div id="wf-node-palette"></div>
+    </aside>
+
+    <!-- ═══ 画布 ═══ -->
+    <main class="wf-canvas-wrap">
+        <svg id="wf-canvas" class="wf-canvas"></svg>
+        <!-- 节点 DOM 层 (叠在 SVG 上方) -->
+        <div id="wf-nodes-layer" class="wf-nodes-layer"></div>
+    </main>
+
+    <!-- ═══ 右侧属性面板 ═══ -->
+    <aside class="wf-props" id="wf-props">
+        <div class="wf-props-title">属性</div>
+        <div id="wf-props-body" class="wf-props-body">
+            <div class="wf-props-empty">点击节点查看属性</div>
+        </div>
+    </aside>
+</div>
+
+<!-- 打开工作流弹窗 -->
+<div class="wf-modal-overlay" id="wf-load-modal" style="display:none">
+    <div class="wf-modal">
+        <div class="wf-modal-header">
+            <h3>打开工作流</h3>
+            <button onclick="document.getElementById('wf-load-modal').style.display='none'">✕</button>
+        </div>
+        <div class="wf-modal-body" id="wf-load-list"></div>
+    </div>
+</div>
+
+<!-- 运行结果弹窗 -->
+<div class="wf-modal-overlay" id="wf-result-modal" style="display:none">
+    <div class="wf-modal wf-modal-wide">
+        <div class="wf-modal-header">
+            <h3>运行结果</h3>
+            <button onclick="document.getElementById('wf-result-modal').style.display='none'">✕</button>
+        </div>
+        <div class="wf-modal-body" id="wf-result-body"></div>
+    </div>
+</div>
+
+<!-- 全屏节点编辑/查看 -->
+<div class="wf-modal-overlay" id="wf-fullscreen-modal" style="display:none">
+    <div class="wf-modal wf-modal-fullscreen">
+        <div class="wf-modal-header">
+            <h3 id="wf-fs-title">节点</h3>
+            <button onclick="WF.closeFullscreen()">✕</button>
+        </div>
+        <div class="wf-modal-body wf-fs-body" id="wf-fs-body"></div>
+        <div class="wf-modal-footer" id="wf-fs-footer"></div>
+    </div>
+</div>
+
+<script src="/static/workflow.js"></script>
+</body>
+</html>

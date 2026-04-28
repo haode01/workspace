@@ -1,0 +1,374 @@
+/* ═══════════════════════════════════════
+   工具详情页样式 — 左右分栏布局
+   ═══════════════════════════════════════ */
+
+.td-app {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+}
+
+/* ── 顶栏 ── */
+.td-topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--bg-glass, rgba(255,255,255,.6));
+    backdrop-filter: blur(12px);
+}
+
+.td-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.td-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* ── 主体分栏 ── */
+.td-main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+/* 左侧面板 */
+.td-left {
+    width: 400px;
+    min-width: 280px;
+    max-width: 50%;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-glass, rgba(255,255,255,.3));
+    resize: horizontal;
+    overflow: hidden;
+}
+
+.td-left-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.td-left-tab {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: all .2s;
+}
+.td-left-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.td-left-panel {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+}
+
+/* 面包屑 */
+.td-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+.td-bc-item {
+    cursor: pointer;
+    color: var(--accent);
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background .15s;
+}
+.td-bc-item:hover { background: var(--accent-alpha, rgba(99,102,241,.1)); }
+.td-bc-sep { color: var(--text-muted); opacity: .5; }
+
+/* 文件列表 */
+.td-file-list { display: flex; flex-direction: column; gap: 1px; }
+
+.td-file-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background .12s;
+}
+.td-file-item:hover { background: var(--accent-alpha, rgba(99,102,241,.08)); }
+.td-file-icon { font-size: 14px; width: 22px; text-align: center; flex-shrink: 0; }
+.td-file-name { flex: 1; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.td-file-size { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+
+/* 文件查看器 */
+.td-file-viewer {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-top: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 50%;
+}
+.td-file-viewer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    background: rgba(0,0,0,.02);
+    flex-shrink: 0;
+}
+.td-file-viewer-content {
+    padding: 10px 12px;
+    overflow: auto;
+    font-size: 12px;
+    line-height: 1.5;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    color: var(--text);
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+    flex: 1;
+}
+
+/* ── 经验面板 ── */
+.td-exp-toolbar { margin-bottom: 10px; }
+
+.td-exp-editor {
+    background: var(--card-bg);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.td-exp-editor-actions { display: flex; gap: 6px; }
+
+.td-exp-list { display: flex; flex-direction: column; gap: 10px; }
+
+.td-exp-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color .2s;
+}
+.td-exp-card:hover { border-color: var(--accent); }
+
+.td-exp-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px 0;
+    gap: 8px;
+}
+.td-exp-card-title { font-size: 14px; font-weight: 600; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.td-exp-card-time { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+.td-exp-card-content { padding: 6px 14px 10px; font-size: 13px; line-height: 1.7; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+.td-exp-card-actions {
+    display: flex;
+    gap: 4px;
+    padding: 0 10px 8px;
+    border-top: 1px solid var(--border);
+    padding-top: 6px;
+    margin: 0 4px;
+}
+
+/* ═══════ 右侧 AI 面板 ═══════ */
+.td-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--bg-glass, rgba(255,255,255,.2));
+}
+
+.td-chat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+}
+
+.td-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* 欢迎消息 */
+.td-chat-welcome {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.8;
+}
+.td-chat-welcome-icon { font-size: 48px; margin-bottom: 12px; }
+.td-chat-welcome-hint { font-size: 12px; margin-top: 12px; opacity: .7; }
+
+/* 消息气泡 */
+.td-msg {
+    display: flex;
+    gap: 10px;
+    max-width: 100%;
+}
+
+.td-msg-user {
+    flex-direction: row-reverse;
+}
+
+.td-msg-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    background: var(--accent-alpha, rgba(99,102,241,.12));
+}
+
+.td-msg-body {
+    max-width: 85%;
+    min-width: 0;
+}
+
+.td-msg-content {
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.7;
+    word-break: break-word;
+}
+
+.td-msg-user .td-msg-content {
+    background: var(--accent);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+}
+
+.td-msg-assistant .td-msg-content {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+}
+
+/* Markdown 内容样式 */
+.td-msg-assistant .td-msg-content p { margin: 0 0 8px; }
+.td-msg-assistant .td-msg-content p:last-child { margin-bottom: 0; }
+.td-msg-assistant .td-msg-content code {
+    background: rgba(0,0,0,.06);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+.td-msg-assistant .td-msg-content pre {
+    background: rgba(0,0,0,.05);
+    padding: 10px 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 8px 0;
+    font-size: 12px;
+    line-height: 1.5;
+}
+.td-msg-assistant .td-msg-content pre code {
+    background: none;
+    padding: 0;
+}
+.td-msg-assistant .td-msg-content ul,
+.td-msg-assistant .td-msg-content ol {
+    margin: 4px 0;
+    padding-left: 20px;
+}
+
+.td-msg-typing {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* 输入区域 */
+.td-chat-input-area {
+    display: flex;
+    gap: 8px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    align-items: flex-end;
+}
+
+.td-chat-input {
+    flex: 1;
+    resize: none;
+    font-family: inherit;
+    line-height: 1.5;
+    min-height: 40px;
+    max-height: 120px;
+}
+
+.td-chat-send {
+    flex-shrink: 0;
+    height: 40px;
+}
+
+/* ── 响应式 ── */
+@media (max-width: 768px) {
+    .td-main {
+        flex-direction: column;
+    }
+    .td-left {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 40vh;
+        min-height: 200px;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        resize: vertical;
+    }
+    .td-topbar {
+        padding: 10px 12px;
+        flex-wrap: wrap;
+    }
+}

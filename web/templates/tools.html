@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工具管理 - AI Desktop Assistant</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/tools.css">
+</head>
+<body>
+
+<!-- 动态背景 -->
+<div id="bg-canvas">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+</div>
+
+<div class="tools-app">
+    <!-- ═══════ 顶部导航 ═══════ -->
+    <header class="tools-topbar">
+        <a href="/" class="tools-back-btn">← 返回主页</a>
+        <h1 class="tools-title">🛠 工具管理</h1>
+        <div class="tools-topbar-actions">
+            <button class="btn btn-primary btn-sm" onclick="openUploadModal()">📤 上传工具</button>
+            <button class="btn btn-ghost btn-sm" onclick="openCategoryModal()">📁 分类管理</button>
+        </div>
+    </header>
+
+    <!-- ═══════ 搜索栏 ═══════ -->
+    <div class="tools-search-bar">
+        <select class="input tools-cat-select" id="filter-category" onchange="loadTools()">
+            <option value="">全部分类</option>
+        </select>
+        <input type="text" class="input tools-search-input" id="search-keyword"
+               placeholder="按名称或描述搜索工具..." onkeydown="if(event.key==='Enter')loadTools()">
+        <button class="btn btn-ghost btn-sm" onclick="loadTools()">🔍 搜索</button>
+    </div>
+
+    <!-- ═══════ 工具列表 ═══════ -->
+    <div class="tools-content">
+        <div class="tools-grid" id="tools-grid">
+            <div class="tools-empty">
+                <div class="tools-empty-icon">🛠</div>
+                <p>暂无工具，点击「上传工具」开始添加</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════ 上传工具弹窗 ═══════ -->
+<div class="modal-overlay" id="upload-tool-modal">
+    <div class="modal" style="max-width:520px">
+        <div class="modal-header">
+            <h2>📤 上传工具</h2>
+            <button class="modal-close" onclick="closeModal('upload-tool-modal')">✕</button>
+        </div>
+        <div class="tools-upload-form">
+            <div class="tools-upload-tabs">
+                <button class="tools-upload-tab active" onclick="switchToolUploadTab('file')" id="tab-btn-file">📄 单文件上传</button>
+                <button class="tools-upload-tab" onclick="switchToolUploadTab('folder')" id="tab-btn-folder">📁 文件夹上传 (压缩包)</button>
+            </div>
+            <label class="tools-form-label">工具名称 <span class="required">*</span>
+                <input type="text" class="input" id="tool-name" placeholder="如: 端口扫描器">
+            </label>
+            <label class="tools-form-label">描述 <span class="required">*</span>
+                <textarea class="input" id="tool-desc" rows="3" placeholder="工具功能描述..."></textarea>
+            </label>
+            <label class="tools-form-label">分类 <span class="required">*</span>
+                <select class="input" id="tool-category" onchange="onCategorySelectChange()">
+                    <option value="">请选择分类</option>
+                </select>
+            </label>
+            <!-- 单文件上传 -->
+            <div id="upload-tab-file">
+                <div class="tools-upload-zone" id="tool-file-zone">
+                    <div class="tools-upload-zone-icon">📄</div>
+                    <p>拖拽文件至此，或点击选择</p>
+                    <p class="tools-upload-hint">支持二进制、脚本等任意文件</p>
+                    <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin-top:8px">
+                        选择文件
+                        <input type="file" id="tool-file-input" hidden onchange="onToolFileSelected(this)">
+                    </label>
+                </div>
+                <div class="tools-file-preview" id="tool-file-preview" style="display:none"></div>
+            </div>
+            <!-- 文件夹上传 (ZIP) -->
+            <div id="upload-tab-folder" style="display:none">
+                <div class="tools-upload-zone" id="tool-folder-zone">
+                    <div class="tools-upload-zone-icon">📁</div>
+                    <p>拖拽压缩包至此，或点击选择</p>
+                    <p class="tools-upload-hint">支持 ZIP / TAR / TAR.GZ / 7Z / RAR，自动解压</p>
+                    <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin-top:8px">
+                        选择压缩包
+                        <input type="file" id="tool-folder-input" accept=".zip,.tar,.tar.gz,.tgz,.tar.bz2,.tbz2,.tar.xz,.txz,.7z,.rar" hidden onchange="onToolFolderSelected(this)">
+                    </label>
+                </div>
+                <div class="tools-file-preview" id="tool-folder-preview" style="display:none"></div>
+            </div>
+            <div class="tools-upload-actions">
+                <button class="btn btn-primary" onclick="doToolUpload()" id="tool-upload-btn">📤 上传</button>
+                <span class="tools-upload-status" id="tool-upload-status"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════ 分类管理弹窗 ═══════ -->
+<div class="modal-overlay" id="category-modal">
+    <div class="modal" style="max-width:440px">
+        <div class="modal-header">
+            <h2>📁 分类管理</h2>
+            <button class="modal-close" onclick="closeModal('category-modal')">✕</button>
+        </div>
+        <div class="tools-cat-form">
+            <div style="display:flex;gap:8px;margin-bottom:12px">
+                <input type="text" class="input" id="new-cat-name" placeholder="新分类名称" style="flex:1">
+                <input type="text" class="input" id="new-cat-desc" placeholder="描述 (可选)" style="flex:1">
+                <button class="btn btn-primary btn-sm" onclick="addCategory()">添加</button>
+            </div>
+            <div class="tools-cat-list" id="category-list"></div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/tools.js"></script>
+</body>
+</html>

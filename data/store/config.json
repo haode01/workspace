@@ -1,0 +1,32 @@
+{
+  "api_key": "sk-9d0ff23a2faf42f8b32481f7402439cc",
+  "api_base": "https://api.deepseek.com/v1",
+  "model": "deepseek-v4-pro",
+  "models": [
+    {
+      "api_base": "https://api.deepseek.com/v1",
+      "api_key": "sk-9d0ff23a2faf42f8b32481f7402439cc",
+      "model": "deepseek-v4-pro",
+      "name": "DeepSeek"
+    },
+    {
+      "api_base": "https://lanyiapi.com/v1",
+      "api_key": "sk-G1IFyxQq5cnRZfuEtgQoAibLXueP28mHQVwW0MyX18JLtEeM",
+      "model": "claude-sonnet-4-6",
+      "name": "Claude"
+    }
+  ],
+  "embedding_model": "text-embedding-v3",
+  "embedding_api_key": "sk-6cfc3e3009b8446b9e2f4f8f416cfe6d",
+  "embedding_api_base": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  "dark_mode": true,
+  "neo4j_uri": "",
+  "neo4j_user": "",
+  "neo4j_password": "",
+  "ext_ai": {
+    "enabled": true,
+    "url": "https://chat.deepseek.com/",
+    "token": "3VbSv5OH1cE+06eeLEUS5149cFQ9R9VmMyBlTEaJY2eOHkwPqEDMQFJpCA2/Dp9c",
+    "token_param": "token"
+  }
+}

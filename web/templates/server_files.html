@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Server File Manager</title>
+<link rel="stylesheet" href="/static/server_files.css">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+
+<!-- ═══ 顶栏 ═══ -->
+<header class="sf-header">
+    <div class="sf-header-left">
+        <a href="/" class="sf-logo">← 返回</a>
+        <h1><span class="sf-glow">🖥</span> 服务器文件管理</h1>
+    </div>
+    <div class="sf-header-right">
+        <div class="sf-path-bar">
+            <input type="text" class="sf-input sf-path-input" id="sf-root-input"
+                   placeholder="输入服务器目录路径 (如 /home/user/project 或 D:\project)"
+                   onkeydown="if(event.key==='Enter')SFM.loadRoot()">
+            <button class="sf-btn sf-btn-primary" onclick="SFM.loadRoot()">📂 加载</button>
+        </div>
+        <div class="sf-sync-bar" id="sf-sync-bar">
+            <span class="sf-sync-label" id="sf-sync-label">🔗</span>
+            <input type="text" class="sf-input sf-sync-input" id="sf-sync-input"
+                   placeholder="同步目标路径 (保存时自动同步到此目录)"
+                   onkeydown="if(event.key==='Enter')SFM.saveSyncPath()">
+            <button class="sf-btn sf-btn-sm sf-btn-glass" id="sf-sync-toggle" onclick="SFM.toggleSync()">启用</button>
+        </div>
+        <button class="sf-btn sf-btn-glass" onclick="SFM.showHistory()">📜 历史</button>
+        <button class="sf-btn sf-btn-glass" id="sf-term-toggle" onclick="SFM.toggleTerminal()" title="终端">💻 终端</button>
+    </div>
+</header>
+
+<!-- ═══ 终端面板 ═══ -->
+<div class="sf-terminal" id="sf-terminal" style="display:none">
+    <div class="sf-term-header">
+        <span class="sf-term-title">💻 终端</span>
+        <span class="sf-term-cwd" id="sf-term-cwd"></span>
+        <div class="sf-term-actions">
+            <button class="sf-btn sf-btn-sm sf-btn-glass" onclick="SFM.clearTerminal()" title="清屏">🗑 清屏</button>
+            <button class="sf-modal-close" onclick="SFM.toggleTerminal()">✕</button>
+        </div>
+    </div>
+    <div class="sf-term-output" id="sf-term-output">
+        <div class="sf-term-welcome">欢迎使用终端，请先加载目录后输入命令</div>
+    </div>
+    <div class="sf-term-input-bar">
+        <span class="sf-term-prompt">$</span>
+        <input type="text" class="sf-term-input" id="sf-term-input"
+               placeholder="输入命令..."
+               onkeydown="SFM.termKeydown(event)">
+        <button class="sf-btn sf-btn-primary sf-btn-sm" onclick="SFM.execCmd()">执行</button>
+    </div>
+</div>
+
+<!-- ═══ 搜索栏 ═══ -->
+<div class="sf-search-bar" id="sf-search-bar">
+    <div class="sf-search-mode">
+        <button class="sf-mode-btn active" id="sf-mode-find" onclick="SFM.switchSearchMode('find')">🔍 查找文件</button>
+        <button class="sf-mode-btn" id="sf-mode-grep" onclick="SFM.switchSearchMode('grep')">📝 搜索内容</button>
+    </div>
+    <div class="sf-search-input-wrap">
+        <input type="text" class="sf-input sf-search-input" id="sf-search-input"
+               placeholder="输入文件名关键词..."
+               onkeydown="if(event.key==='Enter')SFM.doSearch()">
+        <button class="sf-btn sf-btn-primary" onclick="SFM.doSearch()">搜索</button>
+    </div>
+</div>
+
+<!-- ═══ 面包屑 ═══ -->
+<div class="sf-breadcrumb" id="sf-breadcrumb"></div>
+
+<!-- ═══ 主布局: 浏览 + 搜索结果 ═══ -->
+<div class="sf-main">
+    <!-- 左: 文件树 -->
+    <div class="sf-tree-panel" id="sf-tree-panel">
+        <div class="sf-tree-header">
+            <span class="sf-tree-title">📁 文件目录</span>
+            <div class="sf-tree-actions">
+                <button class="sf-btn sf-btn-sm sf-btn-glass" onclick="SFM.refresh()" title="刷新">🔄</button>
+                <button class="sf-btn sf-btn-sm sf-btn-glass" onclick="SFM.promptNewFolder()" title="新建目录">📁+</button>
+                <button class="sf-btn sf-btn-sm sf-btn-glass" onclick="SFM.promptNewFile()" title="新建文件">📄+</button>
+            </div>
+        </div>
+        <div class="sf-tree" id="sf-tree">
+            <div class="sf-empty">请输入服务器路径并点击加载</div>
+        </div>
+    </div>
+    <!-- 右: 搜索结果 / 欢迎 -->
+    <div class="sf-content-panel" id="sf-content-panel">
+        <div class="sf-welcome" id="sf-main-welcome">
+            <div class="sf-welcome-icon">📂</div>
+            <p>选择左侧文件开始编辑</p>
+            <small>支持查看、编辑、重命名、删除，所有操作可通过历史记录回滚</small>
+        </div>
+        <div class="sf-search-results" id="sf-search-results" style="display:none"></div>
+    </div>
+</div>
+
+<!-- ═══ 全屏文件编辑器 ═══ -->
+<div class="sf-fullscreen" id="sf-fullscreen" style="display:none">
+    <div class="sf-fs-topbar">
+        <button class="sf-btn sf-btn-glass" onclick="SFM.closeFullscreen()">← 返回</button>
+        <button class="sf-btn sf-btn-glass" onclick="SFM.toggleFsTree()" title="切换目录面板">📂 目录</button>
+        <span class="sf-editor-path" id="sf-editor-path">未选择文件</span>
+        <div class="sf-editor-controls" id="sf-editor-controls">
+            <button class="sf-btn sf-btn-warning" id="sf-edit-btn" onclick="SFM.toggleEdit()">✏ 编辑</button>
+            <button class="sf-btn sf-btn-success" id="sf-save-btn" onclick="SFM.saveFile()" style="display:none">💾 保存</button>
+            <button class="sf-btn sf-btn-glass" onclick="SFM.formatCode()" title="AI代码格式化/标准化">🔧 格式化</button>
+            <button class="sf-btn sf-btn-glass" onclick="SFM.promptRename()" title="重命名">✏ 重命名</button>
+            <button class="sf-btn sf-btn-glass" onclick="SFM.showFileHistory()" title="当前文件历史">📜 历史</button>
+            <button class="sf-btn sf-btn-danger" onclick="SFM.deleteCurrent()" title="删除">🗑 删除</button>
+            <button class="sf-btn sf-btn-accent" id="sf-ai-trigger" onclick="SFM.toggleAi()">✨ AI 问答</button>
+        </div>
+    </div>
+    <div class="sf-fs-body">
+        <!-- 可切换的目录面板 -->
+        <div class="sf-fs-tree" id="sf-fs-tree">
+            <div class="sf-tree-header">
+                <span class="sf-tree-title">📁 目录</span>
+                <button class="sf-btn sf-btn-sm sf-btn-glass" onclick="SFM.toggleFsTree()">◀</button>
+            </div>
+            <div class="sf-tree" id="sf-fs-tree-list"></div>
+        </div>
+        <!-- 拖动调整目录宽度 -->
+        <div class="sf-tree-resize" id="sf-tree-resize"></div>
+        <!-- 编辑器主区域 -->
+        <div class="sf-editor-panel" id="sf-editor-panel">
+            <div class="sf-editor-body" id="sf-editor-body">
+                <div class="sf-empty">加载中...</div>
+            </div>
+        </div>
+        <!-- AI 侧栏 -->
+        <div class="sf-ai-panel" id="sf-ai-panel" style="display:none">
+            <div class="sf-ai-resize" id="sf-ai-resize"></div>
+            <div class="sf-ai-header">
+                <h3>✨ AI 代码助手</h3>
+                <div class="sf-ai-header-controls">
+                    <label class="sf-ai-toggle" title="以当前文件内容为上下文">
+                        <input type="checkbox" id="sf-ai-fullctx" checked> 全文
+                    </label>
+                    <select class="sf-ai-model-select" id="sf-ai-model-select" title="选择模型">
+                        <option value="">默认模型</option>
+                    </select>
+                    <button class="sf-btn sf-btn-sm sf-btn-glass sf-ai-raw-toggle" id="sf-ai-raw-toggle" onclick="SFM.toggleAiRaw()" title="切换原始/渲染显示">📄 原始</button>
+                    <button class="sf-btn sf-btn-sm sf-btn-glass" onclick="SFM.exportAiChat()" title="导出对话">📥</button>
+                    <button class="sf-modal-close" onclick="SFM.toggleAi()">✕</button>
+                </div>
+            </div>
+            <div class="sf-ai-messages" id="sf-ai-messages">
+                <div class="sf-ai-welcome">
+                    <div class="sf-ai-welcome-icon">🤖</div>
+                    <p>基于当前文件内容向 AI 提问</p>
+                    <small>如: "这段代码做了什么？" "有什么 bug？" "如何优化？"</small>
+                </div>
+            </div>
+            <div class="sf-ai-input">
+                <input type="text" id="sf-ai-query" placeholder="向 AI 提问..."
+                       onkeydown="if(event.key==='Enter')SFM.askAi()">
+                <button class="sf-btn sf-btn-primary" onclick="SFM.askAi()">发送</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ 操作历史弹窗 ═══ -->
+<div class="sf-modal-overlay" id="sf-history-modal" style="display:none">
+    <div class="sf-modal">
+        <div class="sf-modal-header">
+            <h3 id="sf-history-title">📜 操作历史</h3>
+            <button class="sf-modal-close" onclick="SFM.closeModal('sf-history-modal')">✕</button>
+        </div>
+        <div class="sf-modal-body" id="sf-history-list">
+            <div class="sf-empty">加载中...</div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ Toast ═══ -->
+<div class="sf-toast" id="sf-toast"></div>
+
+<script src="/static/server_files.js"></script>
+</body>
+</html>

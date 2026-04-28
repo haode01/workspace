@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工具详情 - AI Desktop Assistant</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/tools.css">
+    <link rel="stylesheet" href="/static/tool_detail.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+
+<div id="bg-canvas">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+</div>
+
+<div class="td-app">
+    <!-- ═══════ 顶栏 ═══════ -->
+    <header class="td-topbar">
+        <a href="/tools" class="tools-back-btn">← 返回工具列表</a>
+        <h1 class="td-title" id="td-title">加载中...</h1>
+        <div class="td-topbar-right">
+            <span class="td-meta" id="td-meta"></span>
+            <a class="btn btn-ghost btn-sm" id="td-download-btn" href="#" style="text-decoration:none">⬇️ 下载工具</a>
+        </div>
+    </header>
+
+    <!-- ═══════ 主体: 左侧文件 + 右侧AI ═══════ -->
+    <div class="td-main">
+        <!-- 左侧面板: 文件浏览 + 使用经验 -->
+        <div class="td-left">
+            <div class="td-left-tabs">
+                <button class="td-left-tab active" onclick="switchLeftTab('files')" id="ltab-files">📂 文件</button>
+                <button class="td-left-tab" onclick="switchLeftTab('exp')" id="ltab-exp">📝 经验</button>
+            </div>
+
+            <!-- 文件浏览面板 -->
+            <div class="td-left-panel" id="lpanel-files">
+                <div class="td-breadcrumb" id="browse-breadcrumb"></div>
+                <div class="td-file-list" id="browse-file-list"></div>
+                <div class="td-file-viewer" id="file-viewer" style="display:none">
+                    <div class="td-file-viewer-header">
+                        <span id="file-viewer-name"></span>
+                        <div>
+                            <button class="btn btn-ghost btn-sm" onclick="sendFileToChat()" title="发送内容给AI">📎 发送给AI</button>
+                            <a class="btn btn-ghost btn-sm" id="file-download-link" href="#" style="text-decoration:none" title="下载文件">⬇️</a>
+                            <button class="btn btn-ghost btn-sm" onclick="closeFileViewer()">✕</button>
+                        </div>
+                    </div>
+                    <pre class="td-file-viewer-content" id="file-viewer-content"></pre>
+                </div>
+            </div>
+
+            <!-- 使用经验面板 -->
+            <div class="td-left-panel" id="lpanel-exp" style="display:none">
+                <div class="td-exp-toolbar">
+                    <button class="btn btn-primary btn-sm" onclick="showExpEditor(0)">✏️ 新增经验</button>
+                </div>
+                <div class="td-exp-editor" id="exp-editor" style="display:none">
+                    <input type="hidden" id="exp-edit-id" value="0">
+                    <input type="text" class="input" id="exp-edit-title" placeholder="经验主题 *">
+                    <textarea class="input" id="exp-edit-content" rows="6" placeholder="记录使用经验、注意事项、技巧等..." style="resize:vertical;font-family:inherit;line-height:1.6"></textarea>
+                    <div class="td-exp-editor-actions">
+                        <button class="btn btn-primary btn-sm" onclick="saveExperience()">💾 保存</button>
+                        <button class="btn btn-ghost btn-sm" onclick="hideExpEditor()">取消</button>
+                    </div>
+                </div>
+                <div class="td-exp-list" id="exp-list">
+                    <div class="tools-empty" style="padding:20px"><p>暂无使用经验</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧面板: AI 问答 -->
+        <div class="td-right">
+            <div class="td-chat-header">
+                <span>🤖 AI 工具助手</span>
+                <button class="btn btn-ghost btn-sm" onclick="clearChat()">🗑 清空对话</button>
+            </div>
+            <div class="td-chat-messages" id="chat-messages">
+                <div class="td-chat-welcome" id="chat-welcome">
+                    <div class="td-chat-welcome-icon">🤖</div>
+                    <p>我是这个工具的 AI 助手，已了解工具的基本信息。</p>
+                    <p>你可以问我：如何使用、参数说明、常见问题等。</p>
+                    <p class="td-chat-welcome-hint">💡 点击文件后可以用「📎 发送给AI」将文件内容作为上下文</p>
+                </div>
+            </div>
+            <div class="td-chat-input-area">
+                <textarea class="input td-chat-input" id="chat-input" rows="2"
+                    placeholder="输入问题，按 Enter 发送 (Shift+Enter 换行)..."
+                    onkeydown="handleChatKey(event)"></textarea>
+                <button class="btn btn-primary td-chat-send" onclick="sendMessage()" id="chat-send-btn">发送</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const TOOL_ID = {{ tool_id }};
+</script>
+<script src="/static/tool_detail.js"></script>
+</body>
+</html>
